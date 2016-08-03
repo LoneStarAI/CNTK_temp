@@ -106,7 +106,7 @@ template class SquareErrorNode<double>;
 // -----------------------------------------------------------------------
 
 template <class ElemType>
-class CrossEntropyWithSoftmaxTempNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType>, public NumInputs<2>
+class CrossEntropyWithSoftmaxTempNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType>, public NumInputs<3>
 {
 	typedef ComputationNodeNonLooping<ElemType> Base;
 	UsingComputationNodeMembersBoilerplate;
@@ -117,13 +117,14 @@ class CrossEntropyWithSoftmaxTempNode : public ComputationNodeNonLooping /*Compu
 
 public:
 	DeclareConstructorFromConfigWithNumInputs(CrossEntropyWithSoftmaxTempNode);
-	CrossEntropyWithSoftmaxTempNode(DEVICEID_TYPE deviceId, const wstring& name, const ElemType& temp)
+	CrossEntropyWithSoftmaxTempNode(DEVICEID_TYPE deviceId, const wstring& name, const ElemType& temp=1.0)
 		: Base(deviceId, name), m_temp(temp)
 	{
 	}
 
+	// new constructor parsing IConfigRecordPtr parameter
 	CrossEntropyWithSoftmaxTempNode(const ScriptableObjects::IConfigRecordPtr configp)
-		: CrossEntropyWithSoftmaxTempNode(configp->Get(L"deviceId"), configp->Get(L"name"), L"<placeholder>", configp->Get(L"temp"))
+		: CrossEntropyWithSoftmaxTempNode(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"temp"))
 	{
 		AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
 	}
