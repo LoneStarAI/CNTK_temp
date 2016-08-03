@@ -37,7 +37,8 @@ void TestFeedForwardNetworkCreation(const DeviceDescriptor& device, bool testSav
     Variable classifierOutput = classifierOutputFunction;
 
     Variable labelsVar({ numOutputClasses }, DataType::Float, L"Labels");
-    auto trainingLossFunction = CNTK::CrossEntropyWithSoftmax(classifierOutput, labelsVar, L"LossFunction");
+    //auto trainingLossFunction = CNTK::CrossEntropyWithSoftmax(classifierOutput, labelsVar, L"LossFunction");
+	auto trainingLossFunction = CNTK::CrossEntropyWithSoftmaxTemp(classifierOutput, labelsVar, L"LossFunction");
     Variable trainingLoss = trainingLossFunction;
     auto predictionFunction = CNTK::ClassificationError(classifierOutput, labelsVar, L"ClassificationError");
     Variable prediction = predictionFunction;

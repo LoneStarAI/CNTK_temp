@@ -38,6 +38,7 @@ namespace CNTK
         Times,
         SquaredError,
         CrossEntropyWithSoftmax,
+		CrossEntropyWithSoftmaxTemp,
         ClassificationError,
         PastValue,
         FutureValue,
@@ -85,6 +86,7 @@ namespace CNTK
             { PrimitiveOpType::Times, "Times" },
             { PrimitiveOpType::SquaredError, "SquaredError" },
             { PrimitiveOpType::CrossEntropyWithSoftmax, "CrossEntropyWithSoftmax" },
+			{ PrimitiveOpType::CrossEntropyWithSoftmaxTemp, "CrossEntropyWithSoftmaxTemp" },
             { PrimitiveOpType::ClassificationError, "ClassificationError" },
             { PrimitiveOpType::PastValue, "PastValue" },
             { PrimitiveOpType::FutureValue, "FutureValue" },
@@ -265,6 +267,7 @@ namespace CNTK
                 break;
             case PrimitiveOpType::SquaredError:
             case PrimitiveOpType::CrossEntropyWithSoftmax:
+			case PrimitiveOpType::CrossEntropyWithSoftmaxTemp:
             case PrimitiveOpType::ClassificationError:
             {
                 assert(inputs.size() == 2);

@@ -130,6 +130,11 @@ namespace CNTK
                 std::swap(inputVars[0], inputVars[1]);
                 opType = PrimitiveOpType::CrossEntropyWithSoftmax;
             }
+			else if (node->OperationName() == OperationNameOf(CrossEntropyWithSoftmaxTempNode))
+			{
+				std::swap(inputVars[0], inputVars[1]);
+				opType = PrimitiveOpType::CrossEntropyWithSoftmaxTemp;
+			}
             else if (node->OperationName() == OperationNameOf(ErrorPredictionNode))
             {
                 std::swap(inputVars[0], inputVars[1]);

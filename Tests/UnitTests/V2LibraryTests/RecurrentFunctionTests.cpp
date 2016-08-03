@@ -150,7 +150,8 @@ void TestRecurrentNetworkCreation(const DeviceDescriptor& device, bool testSaveA
     Variable classifierOutput = classifierOutputFunction;
 
     Variable labelsVar = Variable({ numOutputClasses }, AsDataType<ElementType>(), L"labels");
-    auto trainingLossFunction = CrossEntropyWithSoftmax(classifierOutputFunction, labelsVar, L"lossFunction");
+    //auto trainingLossFunction = CrossEntropyWithSoftmax(classifierOutputFunction, labelsVar, L"lossFunction");
+	auto trainingLossFunction = CrossEntropyWithSoftmaxTemp(classifierOutputFunction, labelsVar, L"lossFunction");
     Variable trainingLoss = trainingLossFunction;
     auto predictionFunction = ClassificationError(classifierOutputFunction, labelsVar, L"classificationError");
     Variable prediction = predictionFunction;

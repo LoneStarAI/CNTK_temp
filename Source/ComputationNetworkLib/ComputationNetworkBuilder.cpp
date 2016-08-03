@@ -420,6 +420,13 @@ shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::Cross
 }
 
 template <class ElemType>
+shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::CrossEntropyWithSoftmaxTemp(const ComputationNodePtr label, const ComputationNodePtr prediction, const std::wstring nodeName)
+{
+	return net.AddNodeToNetAndAttachInputs(New<CrossEntropyWithSoftmaxTempNode<ElemType>>(net.GetDeviceId(), nodeName), { label, prediction });
+}
+
+
+template <class ElemType>
 shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::SequenceWithSoftmax(const ComputationNodePtr label, const ComputationNodePtr prediction, const ComputationNodePtr loglikelihood, const std::wstring nodeName)
 {
     return net.AddNodeToNetAndAttachInputs(New<SequenceWithSoftmaxNode<ElemType>>(net.GetDeviceId(), nodeName), { label, prediction, loglikelihood });

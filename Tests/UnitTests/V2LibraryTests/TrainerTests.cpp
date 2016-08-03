@@ -61,7 +61,8 @@ void TrainSimpleFeedForwardClassifer(const DeviceDescriptor& device)
     classifierOutput = Plus(outputBiasParam, Times(outputTimesParam, classifierOutput));
 
     Variable labels({ numOutputClasses }, DataType::Float, L"labels");
-    auto trainingLoss = CNTK::CrossEntropyWithSoftmax(classifierOutput, labels, L"lossFunction");;
+    //auto trainingLoss = CNTK::CrossEntropyWithSoftmax(classifierOutput, labels, L"lossFunction");;
+	auto trainingLoss = CNTK::CrossEntropyWithSoftmaxTemp(classifierOutput, labels, L"lossFunction");;
     auto prediction = CNTK::ClassificationError(classifierOutput, labels, L"classificationError");
 
     auto oneHiddenLayerClassifier = CNTK::Combine({ trainingLoss, prediction, classifierOutput }, L"classifierModel");
@@ -108,7 +109,8 @@ void TrainMNISTClassifier(const DeviceDescriptor& device)
     classifierOutput = Plus(outputBiasParam, Times(outputTimesParam, classifierOutput));
 
     Variable labels({ numOutputClasses }, DataType::Float, L"labels");
-    auto trainingLoss = CNTK::CrossEntropyWithSoftmax(classifierOutput, labels, L"lossFunction");;
+    //auto trainingLoss = CNTK::CrossEntropyWithSoftmax(classifierOutput, labels, L"lossFunction");;
+	auto trainingLoss = CNTK::CrossEntropyWithSoftmaxTemp(classifierOutput, labels, L"lossFunction");;
     auto prediction = CNTK::ClassificationError(classifierOutput, labels, L"classificationError");
 
     auto oneHiddenLayerClassifier = CNTK::Combine({ trainingLoss, prediction, classifierOutput }, L"classifierModel");

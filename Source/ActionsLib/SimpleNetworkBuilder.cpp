@@ -1679,6 +1679,11 @@ shared_ptr<ComputationNode<ElemType>> SimpleNetworkBuilder<ElemType>::AddTrainAn
             tinput = builder.Times(matrix, input);
         output = builder.CrossEntropyWithSoftmax(label, tinput, (trainNodeName == L"") ? L"CrossEntropyWithSoftmax" : trainNodeName);
         break;
+	case TrainingCriterion::CrossEntropyWithSoftmaxTemp:
+		if (matrix != nullptr)
+			tinput = builder.Times(matrix, input);
+		output = builder.CrossEntropyWithSoftmaxTemp(label, tinput, (trainNodeName == L"") ? L"CrossEntropyWithSoftmaxTemp" : trainNodeName);
+		break;
     case TrainingCriterion::SquareError:
         if (matrix != nullptr)
             tinput = builder.Times(matrix, input);
@@ -1708,6 +1713,7 @@ shared_ptr<ComputationNode<ElemType>> SimpleNetworkBuilder<ElemType>::AddTrainAn
     m_net->AddToNodeGroup(L"criterion", output);
 
     if (!((m_evalCriterion == EvalCriterion::CrossEntropyWithSoftmax && m_trainCriterion == TrainingCriterion::CrossEntropyWithSoftmax) ||
+		  (m_evalCriterion == EvalCriterion::CrossEntropyWithSoftmaxTemp && m_trainCriterion == TrainingCriterion::CrossEntropyWithSoftmaxTemp) ||
           (m_evalCriterion == EvalCriterion::SquareError && m_trainCriterion == TrainingCriterion::SquareError) ||
           (m_evalCriterion == EvalCriterion::Logistic && m_trainCriterion == TrainingCriterion::Logistic) ||
           (m_evalCriterion == EvalCriterion::CRF && m_trainCriterion == TrainingCriterion::CRF) ||
@@ -1722,6 +1728,12 @@ shared_ptr<ComputationNode<ElemType>> SimpleNetworkBuilder<ElemType>::AddTrainAn
             // output = builder.CrossEntropyWithSoftmax(label, tinput, (evalNodeName == L"")?L"EvalCrossEntropyWithSoftmax":evalNodeName);
             output = builder.CrossEntropyWithSoftmax(label, tinput, (evalNodeName == L"") ? L"CrossEntropyWithSoftmax" : evalNodeName);
             break;
+		case EvalCriterion::CrossEntropyWithSoftmaxTemp:
+			if (matrix != nullptr && tinput == input)
+				tinput = builder.Times(matrix, input);
+			// output = builder.CrossEntropyWithSoftmaxTemp(label, tinput, (evalNodeName == L"")?L"EvalCrossEntropyWithSoftmaxTemp":evalNodeName);
+			output = builder.CrossEntropyWithSoftmaxTemp(label, tinput, (evalNodeName == L"") ? L"CrossEntropyWithSoftmaxTemp" : evalNodeName);
+			break;
         case EvalCriterion::ClassCrossEntropyWithSoftmax:
             // output = builder.ClassCrossEntropyWithSoftmax(label, input, matrix, clspostprob, (evalNodeName == L"") ? L"EvalClassCrossEntropyWithSoftmax" : evalNodeName);
             output = builder.ClassCrossEntropyWithSoftmax(label, input, matrix, clspostprob, (evalNodeName == L"") ? L"ClassCrossEntropyWithSoftmax" : evalNodeName);
@@ -1775,6 +1787,7 @@ template class SimpleNetworkBuilder<double>;
 TrainingCriterion ParseTrainingCriterionString(wstring s)
 {
     if      (EqualCI(s, L"crossEntropyWithSoftmax"))      return TrainingCriterion::CrossEntropyWithSoftmax;
+	else if (EqualCI(s, L"crossEntropyWithSoftmaxTemp"))      return TrainingCriterion::CrossEntropyWithSoftmaxTemp;
     else if (EqualCI(s, L"sequenceWithSoftmax"))          return TrainingCriterion::SequenceWithSoftmax;
     else if (EqualCI(s, L"squareError"))                  return TrainingCriterion::SquareError;
     else if (EqualCI(s, L"logistic"))                     return TrainingCriterion::Logistic;
@@ -1787,6 +1800,7 @@ EvalCriterion ParseEvalCriterionString(wstring s)
 {
     if      (EqualCI(s, L"errorPrediction"))              return EvalCriterion::ErrorPrediction;
     else if (EqualCI(s, L"crossEntropyWithSoftmax"))      return EvalCriterion::CrossEntropyWithSoftmax;
+	else if (EqualCI(s, L"crossEntropyWithSoftmaxTemp"))      return EvalCriterion::CrossEntropyWithSoftmaxTemp;
     else if (EqualCI(s, L"sequenceWithSoftmax"))          return EvalCriterion::SequenceWithSoftmax; 
     else if (EqualCI(s, L"classCrossEntropyWithSoftmax")) return EvalCriterion::ClassCrossEntropyWithSoftmax;
     else if (EqualCI(s, L"logistic"))                     return EvalCriterion::Logistic;

@@ -259,6 +259,9 @@ namespace CNTK
             case PrimitiveOpType::CrossEntropyWithSoftmax:
                 computationNodePtr = builder.CrossEntropyWithSoftmax(input1Node, input0Node, function->Name());
                 break;
+			case PrimitiveOpType::CrossEntropyWithSoftmaxTemp:
+				computationNodePtr = builder.CrossEntropyWithSoftmaxTemp(input1Node, input0Node, function->Name());
+				break;
             case PrimitiveOpType::ClassificationError:
                 computationNodePtr = builder.ErrorPrediction(input1Node, input0Node, function->Name());
                 break;
@@ -1059,6 +1062,11 @@ namespace CNTK
     {
         return BinaryOp(PrimitiveOpType::CrossEntropyWithSoftmax, prediction, labels, Dictionary(), name);
     }
+
+	FunctionPtr CrossEntropyWithSoftmaxTemp(const Variable& prediction, const Variable& labels, const std::wstring& name/* = L""*/)
+	{
+		return BinaryOp(PrimitiveOpType::CrossEntropyWithSoftmaxTemp, prediction, labels, Dictionary(), name);
+	}
 
     FunctionPtr ClassificationError(const Variable& prediction, const Variable& labels, const std::wstring& name/* = L""*/)
     {
