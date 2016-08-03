@@ -123,11 +123,11 @@ public:
 	}
 
 	// new constructor parsing IConfigRecordPtr parameter
-	CrossEntropyWithSoftmaxTempNode(const ScriptableObjects::IConfigRecordPtr configp)
-		: CrossEntropyWithSoftmaxTempNode(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"temp"))
-	{
-		AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
-	}
+	//CrossEntropyWithSoftmaxTempNode(const ScriptableObjects::IConfigRecordPtr configp)
+	//	: CrossEntropyWithSoftmaxTempNode(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"temp"))
+	//{
+	//	AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
+	//}
 
 	virtual void BackpropToNonLooping(size_t inputIndex) override
 	{
