@@ -106,142 +106,6 @@ template class SquareErrorNode<double>;
 // -----------------------------------------------------------------------
 
 template <class ElemType>
-class CrossEntropyWithSoftmaxTempNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType>, public NumInputs<3>
-{
-	typedef ComputationNodeNonLooping<ElemType> Base;
-	UsingComputationNodeMembersBoilerplate;
-	static const std::wstring TypeName()
-	{
-		return L"CrossEntropyWithSoftmaxTemp";
-	}
-
-public:
-	DeclareConstructorFromConfigWithNumInputs(CrossEntropyWithSoftmaxTempNode);
-	CrossEntropyWithSoftmaxTempNode(DEVICEID_TYPE deviceId, const wstring& name, const ElemType& temp=1.0)
-		: Base(deviceId, name), m_temp(temp)
-	{
-	}
-
-	// new constructor parsing IConfigRecordPtr parameter
-	//CrossEntropyWithSoftmaxTempNode(const ScriptableObjects::IConfigRecordPtr configp)
-	//	: CrossEntropyWithSoftmaxTempNode(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"temp"))
-	//{
-	//	AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
-	//}
-
-	virtual void BackpropToNonLooping(size_t inputIndex) override
-	{
-		FrameRange fr(Input(0)->GetMBLayout());
-		// left input is scalar
-		if (inputIndex == 0) // left derivative
-		{
-#if DUMPOUTPUT
-			m_logSoftmaxOfRight->Print("CrossEntropyWithSoftmaxTemp Partial-logSoftmaxOfRight");
-			Gradient().Print("CrossEntropyWithSoftmaxTemp Partial-gradientValues");
-			Input(0)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Left-in");
-#endif
-
-			auto gradient = Input(0)->GradientFor(fr);
-			Matrix<ElemType>::Multiply1x1AndWeightedAdd(-1.0f, Gradient() /*1x1*/, *m_logSoftmaxOfRight, 1.0f, gradient);
-#if DUMPOUTPUT
-			Input(0)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Left-out");
-#endif
-		}
-
-		else if (inputIndex == 1) // right derivative
-		{
-#if DUMPOUTPUT
-			m_softmaxOfRight->Print("CrossEntropyWithSoftmaxTemp Partial-softmaxOfRight");
-			Input(0)->ValueFor(fr).Print("CrossEntropyWithSoftmaxTemp Partial-inputFunctionValues");
-			Gradient().Print("CrossEntropyWithSoftmaxTemp Partial-gradientValues");
-			Input(1)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Right-in");
-#endif
-
-			auto gradient = Input(1)->GradientFor(fr);
-			Matrix<ElemType>::AddScaledDifference(Gradient(), *m_softmaxOfRight, Input(0)->ValueFor(fr), gradient);
-#if DUMPOUTPUT
-			Input(1)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Right");
-#endif
-#ifdef _DEBUG
-			Input(1)->InvalidateMissingGradientColumns(fr); // TODO: This should not be necessary.
-#endif
-		}
-	}
-
-	virtual bool OutputUsedInComputingInputNodesGradients() const override
-	{
-		return false;
-	}
-
-	virtual void UpdateFunctionMBSize() override
-	{
-		m_logSoftmaxOfRight->Resize(Input(1)->Value());
-		m_softmaxOfRight->Resize(*m_logSoftmaxOfRight);
-	}
-
-	virtual void /*ComputationNodeNonLooping::*/ ForwardPropNonLooping() override // -sum(left_i * log(softmax_i(right)))
-	{
-		FrameRange fr(Input(0)->GetMBLayout());
-		// first compute the softmax (column-wise)
-		// Note that we need both log and non-log for gradient computation.
-		m_logSoftmaxOfRight->AssignLogSoftmaxOf(Input(1)->ValueFor(fr), true);
-		// BUGBUG: No need to compute m_softmaxOfRight in ForwardProp, should be moved to BackpropTo().
-		m_softmaxOfRight->SetValue(*m_logSoftmaxOfRight);
-		m_softmaxOfRight->InplaceExp();
-		// flatten all gaps to zero, such that gaps will contribute zero to the sum
-		MaskMissingColumnsToZero(*m_logSoftmaxOfRight, Input(1)->GetMBLayout(), fr);
-		// reduce over all frames
-		Value().AssignInnerProductOfMatrices(Input(0)->MaskedValueFor(fr), *m_logSoftmaxOfRight);
-		Value() *= -1;
-#if NANCHECK
-		Value().HasNan("CrossEntropyWithSoftmaxTemp");
-#endif
-#if DUMPOUTPUT
-		Value().Print("CrossEntropyWithSoftmaxTempNode");
-#endif
-	}
-
-	virtual void /*ComputationNodeBase::*/ Validate(bool isFinalValidationPass) override
-	{
-		ValidateBinaryReduce(isFinalValidationPass);
-	}
-
-	virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
-	{
-		Base::CopyTo(nodeP, newName, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			auto node = dynamic_pointer_cast<CrossEntropyWithSoftmaxTempNode<ElemType>>(nodeP);
-			node->m_logSoftmaxOfRight->SetValue(*m_logSoftmaxOfRight);
-			node->m_softmaxOfRight->SetValue(*m_softmaxOfRight);
-		}
-	}
-
-	// request matrices needed to do node function value evaluation
-	virtual void RequestMatricesBeforeForwardProp(MatrixPool& matrixPool)
-	{
-		Base::RequestMatricesBeforeForwardProp(matrixPool);
-		RequestMatrixFromPool(m_logSoftmaxOfRight, matrixPool);
-		RequestMatrixFromPool(m_softmaxOfRight, matrixPool);
-	}
-
-protected:
-	shared_ptr<Matrix<ElemType>> m_logSoftmaxOfRight;
-	shared_ptr<Matrix<ElemType>> m_softmaxOfRight;
-	
-private:
-	ElemType m_temp;
-};
-
-template class CrossEntropyWithSoftmaxTempNode<float>;
-template class CrossEntropyWithSoftmaxTempNode<double>;
-
-// -----------------------------------------------------------------------
-// CrossEntropyWithSoftmaxNode (labels, prediction)
-// calculates: -sum(left_i * log(softmax_i(right)))
-// -----------------------------------------------------------------------
-
-template <class ElemType>
 class CrossEntropyWithSoftmaxNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType>, public NumInputs<2>
 {
     typedef ComputationNodeNonLooping<ElemType> Base;
@@ -361,6 +225,147 @@ protected:
 
 template class CrossEntropyWithSoftmaxNode<float>;
 template class CrossEntropyWithSoftmaxNode<double>;
+
+// -----------------------------------------------------------------------
+// CrossEntropyWithSoftmaxNode (labels, prediction)
+// calculates: -sum(left_i * log(softmax_i(right)))
+// -----------------------------------------------------------------------
+
+template <class ElemType>
+class CrossEntropyWithSoftmaxTempNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType>, public NumInputs<2>
+{
+	typedef ComputationNodeNonLooping<ElemType> Base;
+	UsingComputationNodeMembersBoilerplate;
+	static const std::wstring TypeName()
+	{
+		return L"CrossEntropyWithSoftmaxTemp";
+	}
+
+public:
+	//DeclareConstructorFromConfigWithNumInputs(CrossEntropyWithSoftmaxTempNode);
+	CrossEntropyWithSoftmaxTempNode(DEVICEID_TYPE deviceId, const wstring& name, const ElemType& temp=1.0)
+		: Base(deviceId, name), m_temp(temp)
+	{
+	}
+
+	// new constructor parsing IConfigRecordPtr parameter
+	//DeclareConstructorFromConfigWithNumInputs(CrossEntropyWithSoftmaxTempNode);
+	CrossEntropyWithSoftmaxTempNode(const ScriptableObjects::IConfigRecordPtr configp)
+		: CrossEntropyWithSoftmaxTempNode(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"temp"))
+	{
+		AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
+	}
+	//*/
+	virtual void BackpropToNonLooping(size_t inputIndex) override
+	{
+		FrameRange fr(Input(0)->GetMBLayout());
+		// left input is scalar
+		if (inputIndex == 0) // left derivative
+		{
+#if DUMPOUTPUT
+			m_logSoftmaxOfRight->Print("CrossEntropyWithSoftmaxTemp Partial-logSoftmaxOfRight");
+			Gradient().Print("CrossEntropyWithSoftmaxTemp Partial-gradientValues");
+			Input(0)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Left-in");
+#endif
+
+			auto gradient = Input(0)->GradientFor(fr);
+			Matrix<ElemType>::Multiply1x1AndWeightedAdd(-1.0f, Gradient() /*1x1*/, *m_logSoftmaxOfRight, 1.0f, gradient);
+#if DUMPOUTPUT
+			Input(0)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Left-out");
+#endif
+		}
+
+		else if (inputIndex == 1) // right derivative
+		{
+#if DUMPOUTPUT
+			m_softmaxOfRight->Print("CrossEntropyWithSoftmaxTemp Partial-softmaxOfRight");
+			Input(0)->ValueFor(fr).Print("CrossEntropyWithSoftmaxTemp Partial-inputFunctionValues");
+			Gradient().Print("CrossEntropyWithSoftmaxTemp Partial-gradientValues");
+			Input(1)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Right-in");
+#endif
+
+			auto gradient = Input(1)->GradientFor(fr);
+			Matrix<ElemType>::AddScaledDifference(Gradient(), *m_softmaxOfRight, Input(0)->ValueFor(fr), gradient);
+#if DUMPOUTPUT
+			Input(1)->GradientFor(fr).Print("CrossEntropyWithSoftmaxTempNode Partial-Right");
+#endif
+#ifdef _DEBUG
+			Input(1)->InvalidateMissingGradientColumns(fr); // TODO: This should not be necessary.
+#endif
+		}
+	}
+
+	virtual bool OutputUsedInComputingInputNodesGradients() const override
+	{
+		return false;
+	}
+
+	virtual void UpdateFunctionMBSize() override
+	{
+		m_logSoftmaxOfRight->Resize(Input(1)->Value());
+		m_softmaxOfRight->Resize(*m_logSoftmaxOfRight);
+	}
+
+	virtual void /*ComputationNodeNonLooping::*/ ForwardPropNonLooping() override // -sum(left_i * log(softmax_i(right)))
+	{
+		FrameRange fr(Input(0)->GetMBLayout());
+		// first compute the softmax (column-wise)
+		// Note that we need both log and non-log for gradient computation.
+		m_logSoftmaxOfRight->AssignLogSoftmaxOf(Input(1)->ValueFor(fr), true);
+		// BUGBUG: No need to compute m_softmaxOfRight in ForwardProp, should be moved to BackpropTo().
+		m_softmaxOfRight->SetValue(*m_logSoftmaxOfRight);
+
+		// Divide by temperature
+		//m_softmaxOfRight /= m_temp;
+
+		m_softmaxOfRight->InplaceExp();
+		// flatten all gaps to zero, such that gaps will contribute zero to the sum
+		MaskMissingColumnsToZero(*m_logSoftmaxOfRight, Input(1)->GetMBLayout(), fr);
+		// reduce over all frames
+		Value().AssignInnerProductOfMatrices(Input(0)->MaskedValueFor(fr), *m_logSoftmaxOfRight);
+		Value() *= -1;
+#if NANCHECK
+		Value().HasNan("CrossEntropyWithSoftmaxTemp");
+#endif
+#if DUMPOUTPUT
+		Value().Print("CrossEntropyWithSoftmaxTempNode");
+#endif
+	}
+
+	virtual void /*ComputationNodeBase::*/ Validate(bool isFinalValidationPass) override
+	{
+		ValidateBinaryReduce(isFinalValidationPass);
+	}
+
+	virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
+	{
+		Base::CopyTo(nodeP, newName, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			auto node = dynamic_pointer_cast<CrossEntropyWithSoftmaxTempNode<ElemType>>(nodeP);
+			node->m_logSoftmaxOfRight->SetValue(*m_logSoftmaxOfRight);
+			node->m_softmaxOfRight->SetValue(*m_softmaxOfRight);
+		}
+	}
+
+	// request matrices needed to do node function value evaluation
+	virtual void RequestMatricesBeforeForwardProp(MatrixPool& matrixPool)
+	{
+		Base::RequestMatricesBeforeForwardProp(matrixPool);
+		RequestMatrixFromPool(m_logSoftmaxOfRight, matrixPool);
+		RequestMatrixFromPool(m_softmaxOfRight, matrixPool);
+	}
+
+protected:
+	shared_ptr<Matrix<ElemType>> m_logSoftmaxOfRight;
+	shared_ptr<Matrix<ElemType>> m_softmaxOfRight;
+
+private:
+	ElemType m_temp;
+};
+
+template class CrossEntropyWithSoftmaxTempNode<float>;
+template class CrossEntropyWithSoftmaxTempNode<double>;
 
 // -----------------------------------------------------------------------
 /// CrossEntropyNode (labels, prediction)
